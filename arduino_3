@@ -1,0 +1,78 @@
+#include <MsTimer2.h>
+#include <Keyboard.h> 
+#define X 500000
+#define CON 10
+#define er 20
+#define N 2
+
+volatile unsigned long duration, lastTime, currentTime;
+volatile unsigned long total_duration=0,signal_total=0;
+volatile int i=0,Code=0,freq=0;
+volatile unsigned long start_time=0, end_time=0,Silent=0;
+volatile int con_low=0,con_high=0;
+
+void setup() {
+  attachInterrupt(digitalPinToInterrupt(2),get_duration,RISING);
+  MsTimer2::start(); 
+  lastTime = micros(); 
+  Serial.begin(115200);
+}
+
+void get_duration() {
+  start_time = micros();
+  currentTime = micros(); 
+  duration = currentTime - lastTime;
+  lastTime = currentTime; 
+  Silent = start_time - end_time;
+  
+  if(Silent > X){
+    Serial.print(Silent);
+    Serial.print("\n");
+    Code=0;
+  }
+
+  if(i<N){
+    total_duration += duration;
+    i++;
+  }else{
+    signal_total = total_duration;
+    total_duration = 0;
+    i = 0;
+
+    freq = (1000000*N)/signal_total;
+    Serial.print(freq);
+    Serial.print("\n");
+    
+    if(Code == 0){
+
+      if(1046 - er < freq && freq < 1046 + er){
+        if(con_low == CON){
+          Code=1;
+          Keyboard.begin();
+          Keyboard.print("0");
+          Keyboard.write(KEY_RETURN);
+        }
+        con_low++;
+        con_high = 0;
+      }else con_low = 0;
+      
+      if(1318 - er < freq && freq < 1318 + er){
+        if(con_high == CON){
+          Code=1;
+          Keyboard.begin();
+          Keyboard.print("1");
+          Keyboard.write(KEY_RETURN);
+        }
+        con_high++;
+        con_low = 0;
+      }else con_high = 0;
+     
+        
+    }
+  }
+  end_time = micros();
+}
+
+void loop() { // f=1/T
+  
+}
